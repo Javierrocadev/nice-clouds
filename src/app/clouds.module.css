@@ -1,0 +1,5 @@
+.output {
+  display: block;
+  overflow: visible;
+  pointer-events: none;
+}

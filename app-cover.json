@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "title": "Nice Clouds",
+  "asset": "public/toolcraft/cover.png",
+  "generation": {
+    "kind": "app-composition",
+    "source": "src/app/app-composition.tsx",
+    "state": "app-cover-state.json",
+    "description": "Actual native PNG export of the held frame at 0 seconds, 1920 by 1080 composition rendered at 2K; no editor UI."
+  }
+}
