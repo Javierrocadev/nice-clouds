@@ -9,9 +9,9 @@ Runner: Vitest + protected Playwright functional delivery. Forecast: approximate
 - S4: "no solo lo empieces , terminalo de principio a fil". Complete native controls, timeline, exports, cover, acceptance and first-delivery functional proof. Do not claim completion while checks are pending.
 
 ## Tasks
-- T1 [S1,S2] inline — complete: deterministic domain model; missing-module RED followed by 4 passing domain tests; commit pending.
-- T2 [S1–S3] inline then delegated — complete: native schema, assessed pipeline, shared live/export geometry; typecheck/build and product browser proof pass; commit pending.
-- T3 [S1–S4] delegated then inline correction — partial: acceptance, 22 product browser tests, actual cover and product worklog complete; protected full-delivery proof remains blocked by framework/tooling failures; commit pending.
+- T1 [S1,S2] inline — complete: deterministic domain model; missing-module RED followed by 4 passing domain tests; commit `5454ae9`.
+- T2 [S1–S3] inline then delegated — complete: native schema, assessed pipeline, shared live/export geometry; typecheck/build and product browser proof pass; commit `5454ae9`.
+- T3 [S1–S4] delegated then inline correction — partial: acceptance, 22 product browser tests, actual cover and product worklog complete; protected full-delivery proof remains blocked by framework/tooling failures; commit `5454ae9`.
 
 ## Log
 - L1 Original request: "buenas crack usa la $toolcraft-lab-architect para crear esto. quiero hacer un video de unas nubes pasando por un cielo transparente. estas nubes pasan de izuqierda a derecha de forma suave, dando sensación de calma, de forma caotica(desordenada, nubes separadas, nubes juntas, espacios grandes, espacios pequeños, variación en forma, tamaño y distancia vertical, unas mas arriba que otras y otras bajas, pero siempre estando en la parte superior. en la parte superior"
@@ -26,3 +26,6 @@ Runner: Vitest + protected Playwright functional delivery. Forecast: approximate
 - L10 Observed final proof: production build passed; typecheck passed; all 22 product browser tests passed with zero skips. Parent reran the new persistence proof (1 passed) and all 11 product/domain/schema assertions passed in a focused run. No measured performance was run.
 - L11 Full proof is NOT green: `npm run test` passed docs/integrity but its script suite reported failures and stopped making progress; its exact test process was terminated, not recorded as a natural completed verdict. Direct Vitest reported 714 passed/3 failed/9 skipped before the stale schema-test location was corrected. The remaining signed alias-path mismatch and mixed-budget timeout both reproduce at base `45b169c` in an isolated archive. Full logs live under `.toolcraft/browser-artifacts/clouds-final-*.log`. `test:feature` also hits a signed Windows journal-directory rename EPERM. No gate was weakened, skipped into PASS, or patched.
 - L12 Needs your decision: a passing protected initial-delivery receipt requires the Toolcraft Windows verification failures to be resolved upstream or a separately authorized framework fork. The implemented app and its product-specific functional proof are usable; S4's aggregate proof remains pending. Engram mirror remains unavailable.
+
+- L13 Local implementation commit: `5454ae9` (one coherent studio plus its tests/docs; the 400-line slice heuristic was exceeded to keep runtime assembly and required proof together). Native committed-range assessment against `45b169c`: medium, review_due false, under_budget; no review or approval receipt claimed. No push/PR.
+- L14 Cleanup limitation: removal of the isolated baseline archive at `C:\Users\javie\AppData\Local\Temp\nice-clouds-base-onmXrG` was denied by execution policy. It remains; no alternative deletion mechanism was attempted. Its node_modules entry is a junction to this workspace and must not be recursively followed.
