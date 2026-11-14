@@ -14,6 +14,8 @@ export async function select(page: Page, target: string, label: string) {
 
 export async function openClouds(page: Page) {
   await page.goto("/");
+  // Wait for the actual app to mount before binding proof to its runtime root.
+  await page.getByRole("application", { name: "Canvas viewport" }).waitFor({ state: "visible" });
   const session = await createToolcraftBrowserProofSession(page);
   await expect(page.locator('[data-cloud-index="0"][data-cloud-wrap="0"]')).toBeAttached();
   const toggle = field(page, "panels.timeline.extended").getByRole("switch");

@@ -11,12 +11,41 @@ import { expectToolcraftBackgroundOutputSemantics } from "./browser-background-o
 import { expectToolcraftInfinityCanvasModeEvidence, expectToolcraftInfinityCanvasBackgroundEvidence, expectToolcraftInfinityCanvasImageExportEvidence, expectToolcraftInfinityCanvasVideoExportEvidence, observeInfinityCanvas, observeInfinityCanvasBackground } from "./browser-infinity-canvas-evidence";
 import { dragToolcraftCanvasViewport } from "./performance-canvas-helpers";
 import { evaluateClouds, cloudDefaults } from "../src/app/clouds-model";
+import { cloudHighlightAnchor } from "../src/app/clouds-drawing";
 
 const output = "[data-cloud-output]";
 const marker = '[data-cloud-index="0"][data-cloud-wrap="0"]';
 
 test("browser: clouds.persistence", async ({ page }) => {
   await proveCloudPersistence(page);
+});
+
+test("browser: clouds.illustrated-style", async ({ page }) => {
+  const session = await openClouds(page);
+  await select(page, "export.image.resolution", "2K");
+  const artifact = await download(page, "image");
+  await artifact.saveAs(".toolcraft/browser-artifacts/clouds-chaotic.png");
+  const first = await inspectToolcraftImageDownload({ page, download: artifact, backgroundRgba: sky });
+  const pixels = first.observation.normalizedPixels;
+  const countColor = (color: readonly number[]) => {
+    let count = 0;
+    for (let i = 0; i < pixels.length; i += 4) {
+      if (color.every((value, channel) => Math.abs(pixels[i + channel] - value) < 6)) count++;
+    }
+    return count;
+  };
+  expect(countColor([255, 255, 255, 255])).toBeGreaterThan(20);
+  expect(countColor([168, 226, 248, 255])).toBeGreaterThan(2);
+  expect(countColor([91, 187, 234, 255])).toBeGreaterThan(2);
+  expect(first.inspection.nonBackgroundBounds!.y + first.inspection.nonBackgroundBounds!.height).toBeLessThan(0.36);
+  await expectToolcraftProductObservableToChange(session, session.controlAction("clouds.fill", async control => {
+    await control.getByRole("textbox").fill("#FFDCB3");
+    await control.getByRole("textbox").press("Enter");
+  }), { requirementId: "clouds.illustrated-style", selector: output });
+  await expect(page.locator('[data-cloud-layer="body"]').first()).toHaveAttribute("fill", "#FFDCB3");
+  await expect(page.locator('[data-cloud-layer="body"]').first()).not.toHaveAttribute("stroke");
+  await expect(page.locator('[data-cloud-layer="shadow"]').first()).toHaveAttribute("fill", "#5BA1A4");
+  await expect(page.locator('[data-cloud-layer="mid"]').first()).toHaveAttribute("fill", "#A8C3AE");
 });
 
 for (const target of ["clouds.count", "clouds.clustering", "clouds.size", "clouds.variation", "clouds.band", "clouds.seed"]) {
@@ -57,8 +86,14 @@ test("browser: clouds.timeline.playback", async ({ page }) => {
   await select(page, "export.image.resolution", "2K");
   const initial = (await image(page)).inspection.decodedPixelHash;
   const x = await page.locator(marker).evaluate(n => n.getBoundingClientRect().x);
+  const secondCloud = page.locator('[data-cloud-index="1"][data-cloud-wrap="0"]');
+  const secondX = await secondCloud.evaluate(n => n.getBoundingClientRect().x);
   await scrubber.press("ArrowRight");
   await expect.poll(() => page.locator(marker).evaluate(n => n.getBoundingClientRect().x)).toBeGreaterThan(x);
+  const firstDistance = await page.locator(marker).evaluate(n => n.getBoundingClientRect().x) - x;
+  const secondDistance = await secondCloud.evaluate(n => n.getBoundingClientRect().x) - secondX;
+  expect(secondDistance).toBeGreaterThan(0);
+  expect(Math.abs(firstDistance - secondDistance)).toBeGreaterThan(0.001);
   expect((await image(page)).inspection.decodedPixelHash).not.toBe(initial);
   await scrubber.press("End");
   expect((await image(page)).inspection.decodedPixelHash).toBe(initial);
@@ -100,8 +135,31 @@ for (const target of ["export.video.format", "export.video.resolution"]) {
 }
 
 function productPixel(progress: number) {
-  const cloud = evaluateClouds(cloudDefaults, progress).find(c => c.x > 0.15 && c.x < 0.85 && c.height > 0.07)!;
-  return { xRatio: Math.round(cloud.x * 64) / 64, yRatio: Math.round((cloud.y - cloud.height * 0.05) * 64) / 64, rgba: [255, 255, 255, 255] as const };
+  // Probe the largest cloud's guaranteed highlight disc with a whole 64px observation cell,
+  // so neither export resampling nor the pixel-grid rounding can reach a shaded edge.
+  const frameWidth = 1920, frameHeight = 1080, cells = 64;
+  const all = evaluateClouds(cloudDefaults, progress);
+  const probes = all.filter(c => c.x > 0.1 && c.x < 0.9).map(cloud => {
+    const anchor = cloudHighlightAnchor(cloud, cloud.width * frameWidth, cloud.height * frameHeight);
+    return { cloud, anchor, centerX: (cloud.x - cloud.width / 2) * frameWidth + anchor.x, centerY: (cloud.y - cloud.height / 2) * frameHeight + anchor.y };
+  });
+  // Only clouds whose highlight disc is not covered by any other cloud (including seam copies) qualify.
+  const clear = probes.filter(({ cloud, anchor, centerX, centerY }) => all.every(other => other === cloud || [-1, 0, 1].every(wrap => {
+    const left = (other.x + wrap - other.width / 2) * frameWidth, top = (other.y - other.height / 2) * frameHeight;
+    return centerX + anchor.radius < left || centerX - anchor.radius > left + other.width * frameWidth
+      || centerY + anchor.radius < top || centerY - anchor.radius > top + other.height * frameHeight;
+  })));
+  const { anchor, centerX, centerY } = clear.sort((a, b) => b.cloud.width * b.cloud.height - a.cloud.width * a.cloud.height)[0];
+  const cellWidth = frameWidth / cells, cellHeight = frameHeight / cells;
+  let best: { column: number; row: number; reach: number } | undefined;
+  for (let column = Math.floor(centerX / cellWidth) - 2; column <= Math.floor(centerX / cellWidth) + 2; column++) {
+    for (let row = Math.floor(centerY / cellHeight) - 2; row <= Math.floor(centerY / cellHeight) + 2; row++) {
+      const reach = Math.max(...[0, 1].flatMap(dx => [0, 1].map(dy => Math.hypot((column + dx) * cellWidth - centerX, (row + dy) * cellHeight - centerY))));
+      if (!best || reach < best.reach) best = { column, row, reach };
+    }
+  }
+  expect(best!.reach).toBeLessThan(anchor.radius);
+  return { xRatio: (best!.column + 0.5) / cells, yRatio: (best!.row + 0.5) / cells, rgba: [255, 255, 255, 255] as const };
 }
 
 test("browser: clouds.image.export", async ({ page }) => {

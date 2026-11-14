@@ -11,17 +11,44 @@ describe("illustrated cloud model", () => {
     expect(makeCloudLayout({ ...cloudDefaults, seed: 7 })).not.toEqual(layout);
   });
 
-  it("moves right at a constant speed and joins the loop continuously", () => {
+  it("moves right with subtle individual speeds and joins the loop continuously", () => {
     const a = evaluateClouds(cloudDefaults, 0.1);
     const b = evaluateClouds(cloudDefaults, 0.10001);
     for (let i = 0; i < a.length; i++) {
-      expect(b[i].x - a[i].x).toBeCloseTo(0.00001, 8);
+      const speed = ((b[i].x - a[i].x + 1) % 1) / 0.00001;
+      expect(speed).toBeGreaterThan(0.87);
+      expect(speed).toBeLessThan(1.13);
     }
+    const speeds = a.map((cloud, i) => ((b[i].x - cloud.x + 1) % 1) / 0.00001);
+    expect(Math.min(...speeds)).toBeLessThan(0.95);
+    expect(Math.max(...speeds)).toBeGreaterThan(1.05);
     expect(evaluateClouds(cloudDefaults, 1)).toEqual(evaluateClouds(cloudDefaults, 0));
     expect(evaluateClouds(cloudDefaults, -0.25)).toEqual(evaluateClouds(cloudDefaults, 0.75));
     const end = evaluateClouds(cloudDefaults, 1 - 1e-7);
     const start = evaluateClouds(cloudDefaults, 0);
     end.forEach((cloud, i) => expect(Math.abs(cloud.x - start[i].x)).toBeLessThan(1e-6));
+  });
+
+  it("keeps individual drift forward and velocity continuous across every loop", () => {
+    const step = 1e-5;
+    const displacement = (a: number, b: number) => (b - a + 1) % 1;
+    for (let frame = 0; frame <= 100; frame++) {
+      const phase = frame / 100;
+      const before = evaluateClouds(cloudDefaults, phase);
+      const after = evaluateClouds(cloudDefaults, phase + step);
+      before.forEach((cloud, i) => {
+        const speed = displacement(cloud.x, after[i].x) / step;
+        expect(speed).toBeGreaterThan(0.87);
+        expect(speed).toBeLessThan(1.13);
+      });
+    }
+    const end = evaluateClouds(cloudDefaults, 1 - step);
+    const seam = evaluateClouds(cloudDefaults, 0);
+    const start = evaluateClouds(cloudDefaults, step);
+    seam.forEach((cloud, i) => {
+      expect(displacement(end[i].x, cloud.x) / step)
+        .toBeCloseTo(displacement(cloud.x, start[i].x) / step, 4);
+    });
   });
 
   it("keeps complete silhouettes in the upper band at supported extremes", () => {

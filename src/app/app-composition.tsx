@@ -4,7 +4,7 @@ import { appSchema } from "./app-schema";
 import { CloudCanvas } from "./clouds-renderer";
 import { cloudPipeline } from "./clouds-pipeline";
 import { readCloudSettings } from "./clouds-model";
-import { drawCloudFrame } from "./clouds-drawing";
+import { drawCloudFrame, readCloudShades } from "./clouds-drawing";
 
 export const appComposition = composeToolcraftApp(appSchema, {
   renderer: { pipelineRegistration: cloudPipeline },
@@ -18,7 +18,7 @@ export const appComposition = composeToolcraftApp(appSchema, {
         signal.throwIfAborted();
         if (!rendererPipeline) throw new Error("The cloud export pipeline is unavailable.");
         await rendererPipeline.runPass(cloudPipeline.getPass("export"), undefined, () => {
-          drawCloudFrame(context, frame, readCloudSettings(state.values), timelineProgress, String(state.values["clouds.fill"] ?? "#FFFFFF"));
+          drawCloudFrame(context, frame, readCloudSettings(state.values), timelineProgress, String(state.values["clouds.fill"] ?? "#FFFFFF"), readCloudShades(state.values));
         });
       },
     },

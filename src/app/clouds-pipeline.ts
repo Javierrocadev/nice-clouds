@@ -1,6 +1,7 @@
 import { registerToolcraftRendererPipeline, type ToolcraftRendererPipelinePassContract } from "@/toolcraft/runtime";
 
-export const cloudTargets = ["clouds.count", "clouds.clustering", "clouds.size", "clouds.variation", "clouds.band", "clouds.seed", "clouds.fill"] as const;
+export const cloudColorTargets = ["clouds.fill", "clouds.mid", "clouds.shadow"] as const;
+export const cloudTargets = ["clouds.count", "clouds.clustering", "clouds.size", "clouds.variation", "clouds.morph", "clouds.band", "clouds.seed", ...cloudColorTargets] as const;
 export const cloudPipeline = registerToolcraftRendererPipeline<{
   geometry: ToolcraftRendererPipelinePassContract<void>;
   export: ToolcraftRendererPipelinePassContract<void>;
@@ -23,8 +24,8 @@ export const cloudPipeline = registerToolcraftRendererPipeline<{
   ],
   interactionInvalidation: [
     { interaction: "initial-render", targets: cloudTargets, invalidates: ["geometry"] },
-    { interaction: "control-drag", targets: cloudTargets.filter(t => t !== "clouds.fill"), invalidates: ["geometry"] },
-    { interaction: "control-change", targets: ["clouds.fill"], invalidates: ["geometry"] },
+    { interaction: "control-drag", targets: cloudTargets.filter(t => !cloudColorTargets.some(color => color === t)), invalidates: ["geometry"] },
+    { interaction: "control-change", targets: cloudColorTargets, invalidates: ["geometry"] },
     { interaction: "timeline-playback", targets: ["timeline.playback"], invalidates: ["geometry"] },
     { interaction: "timeline-scrub", targets: ["timeline.playback"], invalidates: ["geometry"] },
     { interaction: "viewport-drag", targets: ["canvas.viewport"], invalidates: [] },

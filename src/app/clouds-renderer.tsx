@@ -2,7 +2,7 @@ import { useEffect, useId, useState } from "react";
 import { getToolcraftTimelineLoopProgress } from "@/toolcraft/runtime";
 import { useToolcraftEvaluatedValues, useToolcraftPipeline, useToolcraftProductSceneFrame, useToolcraftSelector, useToolcraftViewportInteractionActive } from "@/toolcraft/runtime/react";
 import { evaluateClouds, readCloudSettings, type Cloud } from "./clouds-model";
-import { cloudSilhouette } from "./clouds-drawing";
+import { cloudArtwork, cloudLayerPath, readCloudShades } from "./clouds-drawing";
 import { cloudPipeline } from "./clouds-pipeline";
 import styles from "./clouds.module.css";
 
@@ -14,8 +14,7 @@ export function CloudCanvas() {
   const interacting = useToolcraftViewportInteractionActive();
   const pipeline = useToolcraftPipeline();
   const [clouds, setClouds] = useState<readonly Cloud[]>([]);
-  const gradientId = useId().replaceAll(":", "");
-  const clipId = `${gradientId}-tile`;
+  const clipId = `${useId().replaceAll(":", "")}-tile`;
   const fill = String(values["clouds.fill"] ?? "#FFFFFF");
 
   useEffect(() => {
@@ -39,8 +38,12 @@ export function CloudCanvas() {
       </defs>
       <g clipPath={`url(#${clipId})`}>
         {clouds.flatMap((cloud, index) => [-1, 0, 1].map(wrap => (
-          <path key={`${index}:${wrap}`} data-cloud-index={index} data-cloud-wrap={wrap} data-timeline-progress={getToolcraftTimelineLoopProgress({ currentTimeSeconds: time, durationSeconds: duration })} d={cloudSilhouette(cloud)} fill={fill}
-            style={{ transform: `translate(${rect.x + (cloud.x + wrap - cloud.width / 2) * rect.width}px, ${rect.y + (cloud.y - cloud.height / 2) * rect.height}px) scale(${cloud.width * rect.width}, ${cloud.height * rect.height})` }} />
+          <g key={`${index}:${wrap}`} data-cloud-index={index} data-cloud-wrap={wrap} data-timeline-progress={getToolcraftTimelineLoopProgress({ currentTimeSeconds: time, durationSeconds: duration })}
+            style={{ transform: `translate(${rect.x + (cloud.x + wrap - cloud.width / 2) * rect.width}px, ${rect.y + (cloud.y - cloud.height / 2) * rect.height}px)` }}>
+            {cloudArtwork(cloud, cloud.width * rect.width, cloud.height * rect.height, fill, readCloudShades(values)).map(layer => (
+              <path key={layer.id} data-cloud-layer={layer.id} d={cloudLayerPath(layer)} fill={layer.fill} />
+            ))}
+          </g>
         )))}
       </g>
     </svg>

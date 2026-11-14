@@ -5,15 +5,17 @@ export type CloudSettings = Readonly<{
   variation: number;
   band: number;
   seed: number;
+  morph: number;
 }>;
 
 export const cloudDefaults: CloudSettings = {
-  count: 12, clustering: 0.65, size: 1, variation: 0.8, band: 0.35, seed: 42,
+  count: 12, clustering: 0.65, size: 1, variation: 0.8, band: 0.35, seed: 42, morph: 0.35,
 };
 
 export type Cloud = Readonly<{
   x: number; y: number; width: number; height: number;
   crown: number; shoulder: number;
+  progress?: number; morph?: number; phase?: number;
 }>;
 
 function seededRandom(seed: number) {
@@ -40,10 +42,11 @@ export function makeCloudLayout(settings: CloudSettings): readonly Cloud[] {
     const x = scatter * (1 - settings.clustering) + clustered * settings.clustering;
     const scale = settings.size * (1 + (random() - 0.5) * 1.1 * settings.variation);
     const width = 0.14 * scale;
-    const height = Math.min(settings.band * 0.62, 0.075 * scale);
+    const height = Math.min(settings.band * 0.62, 0.11 * scale);
     const y = height / 2 + 0.012 + random() * Math.max(0, settings.band - height - 0.024);
     return {
       x, y, width, height,
+      progress: 0, morph: settings.morph, phase: index * 2.399963229728653 + settings.seed * 0.01,
       crown: 0.42 + (random() - 0.5) * 0.22 * settings.variation,
       shoulder: 0.55 + (random() - 0.5) * 0.3 * settings.variation,
     };
@@ -52,9 +55,13 @@ export function makeCloudLayout(settings: CloudSettings): readonly Cloud[] {
 
 export function evaluateClouds(settings: CloudSettings, t: number): readonly Cloud[] {
   const progress = normalizeCloudTime(t);
-  return makeCloudLayout(settings).map(cloud => ({
-    ...cloud, x: normalizeCloudTime(cloud.x + progress),
-  }));
+  return makeCloudLayout(settings).map((cloud, index) => {
+    const phase = index * 2.399963229728653 + settings.seed * 0.01;
+    // Periodic drift varies speed by at most 12.6%, with matching position and
+    // velocity at the seam. Subtracting the initial offset preserves the layout.
+    const drift = 0.02 * (Math.sin(2 * Math.PI * progress + phase) - Math.sin(phase));
+    return { ...cloud, progress, x: normalizeCloudTime(cloud.x + progress + drift) };
+  });
 }
 
 export function readCloudSettings(values: Readonly<Record<string, unknown>>): CloudSettings {
@@ -65,5 +72,6 @@ export function readCloudSettings(values: Readonly<Record<string, unknown>>): Cl
     variation: Number(values["clouds.variation"] ?? cloudDefaults.variation),
     band: Number(values["clouds.band"] ?? cloudDefaults.band),
     seed: Number(values["clouds.seed"] ?? cloudDefaults.seed),
+    morph: Number(values["clouds.morph"] ?? cloudDefaults.morph),
   };
 }

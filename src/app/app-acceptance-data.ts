@@ -1,15 +1,15 @@
 import type { ToolcraftComponentAcceptance, ToolcraftControlSectionInventoryEntry, ToolcraftProductReadiness, ToolcraftTransferMode } from "./acceptance/types";
 import { appSchema } from "./app-schema";
-import { cloudTargets } from "./clouds-pipeline";
+import { cloudTargets, cloudColorTargets } from "./clouds-pipeline";
 
 export const appTransferMode: ToolcraftTransferMode = {
   mode: "new-toolcraft-app", referenceInputs: [],
-  animationIntent: { mode: "timeline-playback", loopDuration: { source: "product-derived", seconds: 40, evidence: "A 40-second full-width traverse gives the requested calm, constant rightward cloud drift." } },
+  animationIntent: { mode: "timeline-playback", loopDuration: { source: "product-derived", seconds: 40, evidence: "A 40-second full-width traverse gives the requested calm rightward cloud drift with subtle individual speed variation." } },
 };
 
 export const appProductReadiness: ToolcraftProductReadiness = {
   mode: "product", productName: "Nice Clouds", productSummary: "A calm illustrated cloud motion studio.",
-  requestedBehavior: "Irregular illustrated clouds drift smoothly left to right in the upper region, with a configurable background and seamless video export.",
+  requestedBehavior: "Irregular illustrated clouds drift smoothly left to right in the upper region, with configurable subtle shape morphing, background and seamless video export.",
   exportIntent: {
     image: { mode: "toolcraft-default" }, svg: { mode: "not-requested" },
     video: { mode: "user-requested", evidence: {
@@ -42,7 +42,18 @@ const row = (id: string, target: string, componentType: string, extra: Partial<T
 });
 
 export const appAcceptance: readonly ToolcraftComponentAcceptance[] = [
-  ...cloudTargets.map(target => row(target, target, target === "clouds.fill" ? "color" : "slider", { interactionId: `${target}.properties` })),
+  row("clouds.illustrated-style", "clouds.fill", "renderer", {
+    kind: "runtime", automatedTestName: "shares flat blue shading, white highlights and swirl crescents across renderers",
+    expectedObservable: "Clouds have connected organic masses, rounded secondary tips and textured internal shading, with rounded uneven bottoms and no detached dots. Three colors independently edit highlights, midtones and shadows in preview and exports.",
+  }),
+  ...cloudTargets.map(target => row(target, target, cloudColorTargets.some(color => color === target) ? "color" : "slider", {
+    interactionId: `${target}.properties`,
+    ...(target === "clouds.morph" ? {
+      fixture: "Seeded cloud composition paused at the start and at 35% of the timeline cycle.",
+      userAction: "Drag Morph while paused at phase zero; repeat at 35%. Play to observe growth and reshaping.",
+      expectedObservable: "Morph changes actual silhouettes and curls at the held phase; zero preserves rigid shapes. Playback morphs periodically with matching seam geometry and unchanged bounds.",
+    } : {}),
+  })),
   row("background.include", "export.includeBackground", "switch", { backgroundOutputCoverage: "all-required-background-output" }),
   row("background.color", "appearance.background", "color"),
   ...["export.image.format", "export.image.resolution", "export.video.format", "export.video.resolution"].map(target => row(target, target, "select", { optionCoverage: "each-visible-item", evidence: "exported-bytes", browser: { file: "e2e/product-clouds.spec.ts", testName: `browser: clouds.${target}`, budget: "extended-io" } })),

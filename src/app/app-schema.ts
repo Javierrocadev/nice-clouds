@@ -3,6 +3,7 @@ import { defineToolcraft, imageExportModule, timelineModule, videoExportModule, 
 import appDefaults from "./app-defaults.json" with { type: "json" };
 import { appIdentity } from "./app-identity";
 import { cloudDefaults } from "./clouds-model";
+import { cloudShadeColors } from "./clouds-drawing";
 
 const slider = (target: string, label: string, value: number, min: number, max: number, step: number): ToolcraftControlSchema => ({
   type: "slider", target, label, defaultValue: value, min, max, step,
@@ -35,9 +36,12 @@ export const appSchema = defineToolcraft({
             clustering: slider("clouds.clustering", "Clustering", cloudDefaults.clustering, 0, 1, 0.01),
             size: slider("clouds.size", "Size", cloudDefaults.size, 0.6, 1.8, 0.01),
             variation: slider("clouds.variation", "Variation", cloudDefaults.variation, 0, 1, 0.01),
+            morph: { ...slider("clouds.morph", "Morph", cloudDefaults.morph, 0, 3, 0.01), description: "Growth and reshaping intensity, visible while paused and during playback. Zero keeps cloud shapes rigid; values up to 3 amplify breathing and internal curling." },
             band: { ...slider("clouds.band", "Upper band", cloudDefaults.band, 0.2, 0.5, 0.01), description: "The full cloud silhouettes remain within this fraction of the composition height." },
             seed: slider("clouds.seed", "Seed", cloudDefaults.seed, 1, 9999, 1),
-            fill: { type: "color", target: "clouds.fill", label: "Fill", defaultValue: "#FFFFFF", applicability: { mode: "always" }, keyframeable: false, performanceRole: "responsiveness", performanceReason: "Changes cloud fill without rebuilding layout." },
+            fill: { type: "color", target: "clouds.fill", label: "Highlights", semanticGroup: "cloud-shading", description: "Bright textured puff surfaces. Independent of midtones and shadows.", defaultValue: "#FFFFFF", applicability: { mode: "always" }, keyframeable: false, performanceRole: "responsiveness", performanceReason: "Changes cloud highlights without rebuilding layout." },
+            mid: { type: "color", target: "clouds.mid", label: "Midtones", semanticGroup: "cloud-shading", description: "Intermediate puff shading and internal curls.", defaultValue: cloudShadeColors.mid, applicability: { mode: "always" }, keyframeable: false, performanceRole: "responsiveness", performanceReason: "Changes intermediate cloud shading without rebuilding layout." },
+            shadow: { type: "color", target: "clouds.shadow", label: "Shadows", semanticGroup: "cloud-shading", description: "Deep shading across the rounded lower cloud volumes.", defaultValue: cloudShadeColors.shadow, applicability: { mode: "always" }, keyframeable: false, performanceRole: "responsiveness", performanceReason: "Changes cloud shadows without rebuilding layout." },
           } },
         ],
         title: "Controls",
